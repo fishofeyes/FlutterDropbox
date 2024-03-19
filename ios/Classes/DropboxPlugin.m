@@ -3,6 +3,7 @@
 
 @interface DropboxPlugin () {
     NSString *appKey;
+    FlutterResult callback;
 }
 @end
 
@@ -15,7 +16,27 @@ FlutterMethodChannel* channel;
             binaryMessenger:[registrar messenger]];
   DropboxPlugin* instance = [[DropboxPlugin alloc] init];
   [registrar addMethodCallDelegate:instance channel:channel];
+    [registrar addApplicationDelegate:instance];
 }
+
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    BOOL result = [DBClientsManager handleRedirectURL:url completion: ^(DBOAuthResult *authResult) {
+           if (authResult != nil) {
+             if ([authResult isSuccess]) {
+               NSLog(@"Success! User is logged into Dropbox.");
+                 self->callback(@1);
+             } else if ([authResult isCancel]) {
+               NSLog(@"Authorization flow was manually canceled by user!");
+                 self->callback(@0);
+             } else if ([authResult isError]) {
+               NSLog(@"Error: %@", authResult);
+                 self->callback(@0);
+             }
+           }
+         }];
+         return result;
+}
+
 
 + (UIViewController*)topMostController
 {
@@ -46,6 +67,7 @@ FlutterMethodChannel* channel;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+    callback = result;
     if ([@"getPlatformVersion" isEqualToString:call.method]) {
         result([@"iOS " stringByAppendingString:[[UIDevice currentDevice] systemVersion]]);
     } else if ([@"init" isEqualToString:call.method]) {
@@ -78,7 +100,7 @@ FlutterMethodChannel* channel;
                                           NSLog(@"url = %@" , [url absoluteString]);
                                           [[UIApplication sharedApplication] openURL:url];
                                         }];
-      result([NSNumber numberWithBool:TRUE]);
+//      result([NSNumber numberWithBool:TRUE]);
       
   } else if ([@"getAuthorizeUrl" isEqualToString:call.method]) {
 

@@ -54,8 +54,8 @@ class Dropbox {
   ///
   /// Authorize using Dropbox app if it's installed. If not installed, it calls external web browser for authorization.
   /// When user authorizes, no feedback is available. call getAccessToken() to check if authorized.
-  static Future<void> authorize() async {
-    await _channel.invokeMethod('authorize');
+  static Future<int?> authorize() async {
+    return await _channel.invokeMethod('authorize');
   }
 
   /// Authorize using short-lived tokens
